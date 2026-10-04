@@ -1,7 +1,17 @@
-# Sample Hardhat 3 Project (minimal)
+# Blockchain Infrastructure - Proyek FDNPC (UMKM Order System)
 
-This project has a minimal setup of Hardhat 3, without any plugins.
+Repositori ini berisi lingkungan pengembangan blockchain lokal menggunakan **Hardhat** dan **Ganache**.
 
-## What's included?
+## 🚀 Panduan Memulai (Quick Start)
 
-The project includes native support for TypeScript, Hardhat scripts, tasks, and support for Solidity compilation and tests.
+### 1. Prasyarat System
+- Node.js (LTS)
+- Git Bash
+- Ganache GUI (Port 7545, Chain ID 1337)
+
+### 2. Instalasi Proyek
+```bash
+git clone [https://github.com/Blue-minn/proyek-cahya-audio.git](https://github.com/Blue-minn/proyek-cahya-audio.git)
+cd proyek-cahya-audio
+npm install --legacy-peer-deps
+cp .env.example .env
