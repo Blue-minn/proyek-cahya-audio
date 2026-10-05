@@ -2,19 +2,23 @@ const hre = require("hardhat");
 const fs = require("fs");
 
 async function main() {
-  console.log("Memulai deployment smart contract...");
+  console.log("Memulai deployment smart contract HSportOrder...");
 
-  const umkmOrder = await hre.ethers.deployContract("umkmOrder");
-  await umkmOrder.waitForDeployment();
-  const contractAddress = await umkmOrder.getAddress();
+  const HSportOrder = await hre.ethers.getContractFactory("HSportOrder");
+  const hSportOrder = await HSportOrder.deploy();
+
+  await hSportOrder.waitForDeployment();
+
+  const contractAddress = await hSportOrder.getAddress();
 
   console.log("----------------------------------------");
-  console.log("Smart Contract berhasil di-deploy!");
+  console.log("Smart Contract HSportOrder berhasil di-deploy!");
   console.log("Contract Address:", contractAddress);
   console.log("----------------------------------------");
 
-  const logData = `Deployed at: ${new Date().toISOString()}\nAddress: ${contractAddress}\nNetwork: Ganache\n\n`;
-  fs.appendFileSync("deployment-log.txt", logData);
+  // Catat ke file deployment-log.txt
+  const logContent = `[${new Date().toLocaleString()}] Contract: HSportOrder | Address: ${contractAddress}\n`;
+  fs.appendFileSync("deployment-log.txt", logContent);
 }
 
 main().catch((error) => {
