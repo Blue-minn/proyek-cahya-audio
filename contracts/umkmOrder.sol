@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-contract umkmOrder {
-    string public orderStatus = "Created";
+import "./CahyaAudioOrder.sol";
 
-    function updateStatus(string memory _status) public {
-        orderStatus = _status;
-    }
+contract umkmOrder is CahyaAudioOrder {
+    // Mewarisi seluruh fungsionalitas CahyaAudioOrder untuk backwards-compatibility
 }

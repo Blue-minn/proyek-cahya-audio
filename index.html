@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cahya Audio — Sistem Pemesanan &amp; Audit Trail Web3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Web3.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+
+<style>
+  :root {
+    --bg: #090F0D;
+    --surface: #111B17;
+    --surface-2: #16241F;
+    --surface-card: #182823;
+    --border: #233931;
+    --border-focus: #355A4E;
+    --text-main: #F2EFE9;
+    --text-muted: #8E9F97;
+    --primary: #1ED79A;
+    --primary-glow: rgba(30, 215, 154, 0.2);
+    --accent: #E5B454;
+    --accent-glow: rgba(229, 180, 84, 0.2);
+    --danger: #FF6659;
+    --radius-lg: 16px;
+    --radius-md: 10px;
+    --radius-sm: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text-main);
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  header {
+    background: rgba(17, 27, 23, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 16px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand-logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, var(--primary), #117354);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: #071510;
+    font-size: 18px;
+  }
+  .brand-text h1 { font-size: 16px; font-weight: 700; color: var(--text-main); line-height: 1.2; }
+  .brand-text p { font-size: 11.5px; color: var(--text-muted); }
+
+  .header-actions { display: flex; align-items: center; gap: 12px; }
+  .btn-dashboard {
+    text-decoration: none;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--surface-2);
+    border: 1px solid rgba(229, 180, 84, 0.3);
+    padding: 8px 14px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: 0.2s;
+  }
+  .btn-dashboard:hover {
+    background: rgba(229, 180, 84, 0.15);
+    border-color: var(--accent);
+  }
+
+  /* Main Container */
+  main {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+    width: 100%;
+    flex: 1;
+  }
+
+  /* Wizard Stepper Bar */
+  .stepper {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 768px) {
+    .stepper { grid-template-columns: 1fr 1fr; }
+  }
+  .step-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .step-item.active {
+    border-color: var(--primary);
+    background: var(--surface-card);
+    box-shadow: 0 0 16px var(--primary-glow);
+  }
+  .step-item.completed {
+    border-color: rgba(30, 215, 154, 0.4);
+  }
+  .step-item.completed .step-badge {
+    background: var(--primary);
+    color: #071510;
+  }
+  .step-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .step-item.active .step-badge {
+    background: var(--primary);
+    color: #071510;
+  }
+  .step-info .step-num { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
+  .step-info .step-title { font-size: 13px; font-weight: 600; color: var(--text-main); }
+
+  /* Grid Layout */
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1.25fr 0.85fr;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .content-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 26px;
+  }
+  .card-header {
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-header h2 { font-size: 18px; font-weight: 700; color: var(--text-main); }
+  .card-header p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+  /* Form Elements */
+  .form-group { margin-bottom: 18px; }
+  .form-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 7px; }
+  .form-control {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    color: var(--text-main);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-control:focus { border-color: var(--primary); }
+
+  .select-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .select-option {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: 0.15s;
+  }
+  .select-option:hover { border-color: var(--border-focus); }
+  .select-option.selected {
+    border-color: var(--primary);
+    background: rgba(30, 215, 154, 0.08);
+  }
+  .select-option .opt-title { font-size: 13px; font-weight: 600; color: var(--text-main); }
+  .select-option .opt-price { font-size: 12px; color: var(--accent); font-weight: 600; margin-top: 3px; }
+
+  /* Buttons */
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: var(--radius-sm);
+    border: none;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: #071510;
+  }
+  .btn-primary:hover { background: #16b882; transform: translateY(-1px); }
+  .btn-primary:disabled { background: var(--surface-2); color: var(--text-muted); cursor: not-allowed; transform: none; }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-main);
+  }
+  .btn-outline:hover { background: var(--surface-2); }
+
+  .btn-accent {
+    background: var(--accent);
+    color: #120e06;
+  }
+  .btn-accent:hover { background: #d3a444; }
+
+  /* Live Tracker Status Sidebar Card */
+  .tracker-box {
+    background: var(--surface-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 18px;
+    margin-bottom: 20px;
+  }
+  .tracker-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border);
+    font-size: 13px;
+  }
+  .tracker-row:last-child { border-bottom: none; }
+  .tracker-row .t-label { color: var(--text-muted); }
+  .tracker-row .t-val { font-weight: 600; text-align: right; }
+  .mono { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; }
+
+  /* Progres Visual Bar (5 Steps) */
+  .prog-track {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin: 20px 0 16px;
+  }
+  .prog-node {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    padding-top: 10px;
+    border-top: 3px solid var(--border);
+    transition: all 0.3s ease;
+  }
+  .prog-node.done { border-top-color: var(--primary); color: var(--text-main); font-weight: 600; }
+  .prog-node.current { border-top-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .prog-node.cancelled { border-top-color: var(--danger); color: var(--danger); font-weight: 700; }
+
+  /* Pill Status Badges */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .pill.online { background: rgba(30, 215, 154, 0.15); color: var(--primary); border: 1px solid var(--primary); }
+  .pill.warn { background: rgba(255, 102, 89, 0.15); color: var(--danger); border: 1px solid var(--danger); }
+
+  /* Admin Action Controls */
+  .admin-panel {
+    background: rgba(229, 180, 84, 0.05);
+    border: 1px solid rgba(229, 180, 84, 0.25);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-top: 16px;
+  }
+  .admin-panel-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+  }
+  .admin-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .btn-mini {
+    padding: 8px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-main);
+    transition: 0.15s;
+  }
+  .btn-mini:hover { background: var(--border); }
+  .btn-mini.active { border-color: var(--accent); background: rgba(229, 180, 84, 0.15); color: var(--accent); }
+
+  /* Console Log Terminal */
+  .terminal-box {
+    background: #060A08;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #5af78e;
+    max-height: 140px;
+    overflow-y: auto;
+    margin-top: 14px;
+    line-height: 1.5;
+  }
+
+  /* Privacy Notice */
+  .privacy-box {
+    margin-top: 24px;
+    background: rgba(30, 215, 154, 0.04);
+    border-left: 3px solid var(--primary);
+    padding: 14px 16px;
+    border-radius: 4px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+  .privacy-box strong { color: var(--text-main); }
+
+  /* View Sections (Wizard Steps) */
+  .view-panel { display: none; }
+  .view-panel.active { display: block; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="brand">
+    <div class="brand-logo">C</div>
+    <div class="brand-text">
+      <h1>Cahya Audio Mobil</h1>
+      <p>Sistem Pemesanan &amp; Verifikasi On-Chain</p>
+    </div>
+  </div>
+  <div class="header-actions">
+    <a href="/dashboard.php" class="btn-dashboard">
+      <span>📊</span> Dashboard Audit Trail
+    </a>
+  </div>
+</header>
+
+<main>
+  <!-- 4-Step Interactive Stepper -->
+  <div class="stepper">
+    <div class="step-item active" id="nav-step-1" onclick="switchStep(1)">
+      <div class="step-badge">1</div>
+      <div class="step-info">
+        <div class="step-num">Langkah 1</div>
+        <div class="step-title">Pilih Paket Mobil</div>
+      </div>
+    </div>
+    <div class="step-item" id="nav-step-2" onclick="switchStep(2)">
+      <div class="step-badge">2</div>
+      <div class="step-info">
+        <div class="step-num">Langkah 2</div>
+        <div class="step-title">Koneksi Dompet Web3</div>
+      </div>
+    </div>
+    <div class="step-item" id="nav-step-3" onclick="switchStep(3)">
+      <div class="step-badge">3</div>
+      <div class="step-info">
+        <div class="step-num">Langkah 3</div>
+        <div class="step-title">Catat On-Chain</div>
+      </div>
+    </div>
+    <div class="step-item" id="nav-step-4" onclick="switchStep(4)">
+      <div class="step-badge">4</div>
+      <div class="step-info">
+        <div class="step-num">Langkah 4</div>
+        <div class="step-title">Pantau Pengerjaan</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <!-- Left Column: Form & Step Wizards -->
+    <div class="card">
+      
+      <!-- STEP 1: FORMULIR PEMESANAN -->
+      <div class="view-panel active" id="panel-step-1">
+        <div class="card-header">
+          <h2>Langkah 1: Formulir Pemesanan &amp; Kustomisasi Audio</h2>
+          <p>Pilih paket modifikasi audio dan masukkan informasi kendaraan Anda.</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">PILIH PAKET KUSTOMISASI AUDIO</label>
+          <div class="select-grid" id="packageGrid">
+            <div class="select-option selected" onclick="selectPackage(this, 'Subwoofer + Kustom Bagasi (Innova)', 4500000)">
+              <div class="opt-title">Subwoofer + Bagasi Custom</div>
+              <div class="opt-price">Rp 4.500.000</div>
+            </div>
+            <div class="select-option" onclick="selectPackage(this, 'Pilar 3-Way + DSP Amplifier', 6800000)">
+              <div class="opt-title">Pilar 3-Way + Tuning DSP</div>
+              <div class="opt-price">Rp 6.800.000</div>
+            </div>
+            <div class="select-option" onclick="selectPackage(this, 'Head Unit Android 10 Inch + Kamera 360', 3800000)">
+              <div class="opt-title">Android HU + Kamera 360°</div>
+              <div class="opt-price">Rp 3.800.000</div>
+            </div>
+            <div class="select-option" onclick="selectPackage(this, 'Full Peredam Kabin + 4 Pintu Mobil', 3200000)">
+              <div class="opt-title">Full Peredam Kabin 4 Pintu</div>
+              <div class="opt-price">Rp 3.200.000</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">TIPE &amp; MODEL KENDARAAN</label>
+          <input type="text" id="inputCarModel" class="form-control" value="Toyota Innova Zenix" placeholder="Contoh: Honda Civic Turbo / Mitsubishi Pajero">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="form-group">
+            <label class="form-label">NAMA LENGKAP PELANGGAN</label>
+            <input type="text" id="inputCustomerName" class="form-control" value="Budi Santoso" placeholder="Nama Anda">
+          </div>
+          <div class="form-group">
+            <label class="form-label">NO. WHATSAPP (AKTIF)</label>
+            <input type="text" id="inputCustomerPhone" class="form-control" value="081717131489" placeholder="08xxxxxxxx">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">CATATAN KHUSUS MODIFIKASI</label>
+          <input type="text" id="inputCustomNotes" class="form-control" value="Finishing boks bagasi warna hitam jahitan merah senada jok kulit" placeholder="Catatan bahan/posisi speaker...">
+        </div>
+
+        <button class="btn btn-primary" onclick="proceedToStep(2)">
+          Lanjut ke Langkah 2: Hubungkan Dompet Web3 →
+        </button>
+      </div>
+
+      <!-- STEP 2: KONEKSI DOMPET WEB3 -->
+      <div class="view-panel" id="panel-step-2">
+        <div class="card-header">
+          <h2>Langkah 2: Hubungkan Dompet MetaMask</h2>
+          <p>Sambungkan dompet Anda untuk memvalidasi transaksi di jaringan lokal Ganache.</p>
+        </div>
+
+        <div style="background: var(--surface-2); padding: 18px; border-radius: var(--radius-md); margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-size: 13px; color: var(--text-muted);">Status Jaringan:</span>
+            <span id="networkPill" class="pill warn">Belum Terhubung</span>
+          </div>
+          <div style="font-size: 13px; line-height: 1.6;">
+            <strong>Nama Jaringan:</strong> <span id="networkNameText" class="mono">—</span><br>
+            <strong>Alamat Dompet:</strong> <span id="walletAddressText" class="mono">—</span>
+          </div>
+        </div>
+
+        <button id="connectMetaMaskBtn" class="btn btn-primary" onclick="connectWalletAction()">
+          🦊 Hubungkan MetaMask Sekarang
+        </button>
+
+        <button id="switchChainBtn" class="btn btn-accent" style="display: none; margin-top: 10px;" onclick="switchOrAddGanache()">
+          ⚡ Pindah ke Jaringan Ganache GUI (Chain 5777/1337)
+        </button>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button class="btn btn-outline" style="width: 35%;" onclick="proceedToStep(1)">← Kembali</button>
+          <button id="btnProceedToStep3" class="btn btn-primary" style="width: 65%;" onclick="proceedToStep(3)" disabled>
+            Lanjut ke Langkah 3: Catat On-Chain →
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 3: CATAT PESANAN ON-CHAIN -->
+      <div class="view-panel" id="panel-step-3">
+        <div class="card-header">
+          <h2>Langkah 3: Registrasi Pesanan ke Blockchain</h2>
+          <p>Sistem akan membuat hash data pesanan dan mencatatnya ke Smart Contract Ganache.</p>
+        </div>
+
+        <div class="tracker-box">
+          <div class="tracker-row">
+            <span class="t-label">Order Code Unik:</span>
+            <span class="t-val mono" id="previewOrderCode">CA-20261011-0001</span>
+          </div>
+          <div class="tracker-row">
+            <span class="t-label">Paket Audio:</span>
+            <span class="t-val" id="previewPackageName">Subwoofer + Kustom Bagasi (Innova)</span>
+          </div>
+          <div class="tracker-row">
+            <span class="t-label">Mobil Pelanggan:</span>
+            <span class="t-val" id="previewCarModel">Toyota Innova Zenix</span>
+          </div>
+          <div class="tracker-row">
+            <span class="t-label">Total Biaya:</span>
+            <span class="t-val" style="color: var(--accent); font-size: 15px;" id="previewAmount">Rp 4.500.000</span>
+          </div>
+          <div class="tracker-row">
+            <span class="t-label">Smart Contract:</span>
+            <span class="t-val mono" style="font-size: 11px;">0xBDa512B71a3bd723661A0b286bdDf44112531e90</span>
+          </div>
+        </div>
+
+        <button id="btnRecordOnChain" class="btn btn-primary" onclick="createOrderOnChainAction()">
+          🔒 Buat &amp; Catat Pesanan Baru On-Chain (Ganache)
+        </button>
+        <p style="text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+          Atau gunakan pesanan aktif yang sudah ada untuk lanjut memantau.
+        </p>
+
+        <div style="display: flex; gap: 10px; margin-top: 16px;">
+          <button class="btn btn-outline" style="width: 35%;" onclick="proceedToStep(2)">← Kembali</button>
+          <button class="btn btn-primary" style="width: 65%;" onclick="proceedToStep(4)">
+            Lihat Progres Real-Time (Langkah 4) →
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 4: PELACAKAN PROGRES (REAL-TIME TRACKER) -->
+      <div class="view-panel" id="panel-step-4">
+        <div class="card-header">
+          <h2>Langkah 4: Pelacakan Progres Pengerjaan Mobil</h2>
+          <p>Status pengerjaan diperbarui secara real-time dari Smart Contract Cahya Audio.</p>
+        </div>
+
+        <div class="prog-track">
+          <div class="prog-node done" id="node-0">1. Created</div>
+          <div class="prog-node done" id="node-1">2. Paid</div>
+          <div class="prog-node done" id="node-2">3. InProcess</div>
+          <div class="prog-node current" id="node-3">4. Completed</div>
+          <div class="prog-node" id="node-4">5. Cancelled</div>
+        </div>
+
+        <!-- Mode Kontrol Admin / Pelanggan -->
+        <div class="admin-panel">
+          <div class="admin-panel-title">🛠️ Kontrol Status Bengkel (Admin &amp; Teknisi)</div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+            Simulasikan perubahan status fisik mobil di bengkel. Setiap tombol akan memicu transaksi di Ganache:
+          </p>
+          <div class="admin-buttons">
+            <button class="btn-mini" onclick="triggerStatusUpdate(0)">1. Set Created</button>
+            <button class="btn-mini" onclick="triggerStatusUpdate(1)">2. Set Paid</button>
+            <button class="btn-mini" onclick="triggerStatusUpdate(2)">3. Set InProcess</button>
+            <button class="btn-mini" onclick="triggerStatusUpdate(3)">4. Set Completed</button>
+          </div>
+          <button class="btn-mini" style="width: 100%; margin-top: 6px; color: var(--danger); border-color: rgba(255,102,89,0.3);" onclick="triggerStatusUpdate(4)">
+            ✕ Batalkan Pesanan (Set Cancelled)
+          </button>
+        </div>
+
+        <!-- Terminal Console Log -->
+        <div class="terminal-box" id="liveTerminal">
+          <div>[Sistem] Terminal Audit Trail Siap. Menunggu interaksi...</div>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+          <button class="btn btn-outline" style="width: 40%;" onclick="proceedToStep(1)">+ Buat Pesanan Baru</button>
+          <a href="/dashboard.php" class="btn btn-primary" style="width: 60%; text-decoration: none;">
+            Buka Halaman Audit Trail →
+          </a>
+        </div>
+      </div>
+
+      <!-- Privacy Explainer -->
+      <div class="privacy-box">
+        <strong>🛡️ Perlindungan Privasi Pelanggan (GDPR / UU PDP):</strong><br>
+        Nama, nomor kontak WhatsApp, dan foto kustomisasi mobil Anda disimpan secara privat di server lokal toko. Hanya ID pesanan, total harga, alamat dompet, dan status progres yang dicatat di blockchain sebagai bukti transaksi transparan.
+      </div>
+
+    </div>
+
+    <!-- Right Column: Ringkasan Pesanan Aktif (Live Sidebar Card) -->
+    <div>
+      <div class="card" style="position: sticky; top: 90px;">
+        <div class="card-header">
+          <h2>Ringkasan Pesanan Aktif</h2>
+          <p>Terverifikasi on-chain di Ganache Testnet</p>
+        </div>
+
+        <div class="tracker-box">
+          <div class="tracker-row">
+            <span class="t-label">Order ID:</span>
+            <span class="t-val mono" id="summaryOrderCode">CA-20261011-0001</span>
+          </div>
+          <div class="tracker-row">
+            <span class="t-label">Layanan / Paket:</span>
+            <span class="t-val" id="summaryPackageName">Subwoofer + Bagasi (Innova)</span>
+          </div>
+          <div class="tracker-row">
+            <span class="t-label">Model Mobil:</span>
+            <span class="t-val" id="summaryCarModel">Toyota Innova Zenix</span>
+          </div>
+          <div class="tracker-row">
+            <span class="t-label">Total Biaya:</span>
+            <span class="t-val" style="color: var(--accent); font-size: 16px;" id="summaryTotalAmount">Rp 4.500.000</span>
+          </div>
+          <div class="tracker-row">
+            <span class="t-label">Status Saat Ini:</span>
+            <span class="t-val" id="summaryStatusBadge" style="color: var(--primary);">Completed</span>
+          </div>
+        </div>
+
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+          <strong>Alamat Smart Contract:</strong><br>
+          <span class="mono" style="word-break: break-all; color: var(--text-main);">0xBDa512B71a3bd723661A0b286bdDf44112531e90</span>
+        </div>
+
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">
+          <strong>Metode Pembayaran Tersedia:</strong>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+            <span style="background: var(--surface-2); padding: 4px 8px; border-radius: 4px; font-size: 11px;">QRIS</span>
+            <span style="background: var(--surface-2); padding: 4px 8px; border-radius: 4px; font-size: 11px;">BCA / Mandiri</span>
+            <span style="background: var(--surface-2); padding: 4px 8px; border-radius: 4px; font-size: 11px;">Kartu Kredit</span>
+            <span style="background: var(--surface-2); padding: 4px 8px; border-radius: 4px; font-size: 11px;">SPayLater</span>
+          </div>
+        </div>
+
+        <a href="https://wa.me/6281717131489" target="_blank" class="btn btn-outline" style="font-size: 12.5px;">
+          💬 Konsultasi via WhatsApp Bisnis
+        </a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // ========================================================
+  // KONFIGURASI SMART CONTRACT & STATE
+  // ========================================================
+  const CONTRACT_ADDRESS = "0xBDa512B71a3bd723661A0b286bdDf44112531e90";
+  const GANACHE_CHAIN_IDS = ['0x539', '0x1691']; // 1337 & 5777
+
+  const CONTRACT_ABI = [
+    {
+      "inputs": [{ "internalType": "string", "name": "_orderCode", "type": "string" }],
+      "name": "getOrder",
+      "outputs": [
+        { "internalType": "address", "name": "customerWallet", "type": "address" },
+        { "internalType": "uint256", "name": "totalAmount", "type": "uint256" },
+        { "internalType": "uint8", "name": "status", "type": "uint8" },
+        { "internalType": "bytes32", "name": "dataHash", "type": "bytes32" },
+        { "internalType": "uint256", "name": "createdAt", "type": "uint256" },
+        { "internalType": "uint256", "name": "updatedAt", "type": "uint256" }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "string", "name": "_orderCode", "type": "string" },
+        { "internalType": "uint256", "name": "_totalAmount", "type": "uint256" },
+        { "internalType": "bytes32", "name": "_dataHash", "type": "bytes32" }
+      ],
+      "name": "createOrder",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "string", "name": "_orderCode", "type": "string" },
+        { "internalType": "uint8", "name": "_status", "type": "uint8" }
+      ],
+      "name": "updateStatus",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        { "indexed": true, "internalType": "string", "name": "orderCode", "type": "string" },
+        { "indexed": true, "internalType": "uint8", "name": "status", "type": "uint8" },
+        { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+      ],
+      "name": "OrderStatusUpdated",
+      "type": "event"
+    }
+  ];
+
+  const STATUS_LABELS = ["Created", "Paid", "InProcess", "Completed", "Cancelled"];
+
+  // State Pesanan Saat Ini
+  let currentOrderCode = "CA-20261011-0001";
+  let currentPackageName = "Subwoofer + Kustom Bagasi (Innova)";
+  let currentTotalAmount = 4500000;
+  let currentCarModel = "Toyota Innova Zenix";
+
+  let web3Instance = null;
+  let orderContract = null;
+  let userAccount = null;
+
+  // DOM Elements
+  const liveTerminal = document.getElementById('liveTerminal');
+  const networkPill = document.getElementById('networkPill');
+  const networkNameText = document.getElementById('networkNameText');
+  const walletAddressText = document.getElementById('walletAddressText');
+  const switchChainBtn = document.getElementById('switchChainBtn');
+  const btnProceedToStep3 = document.getElementById('btnProceedToStep3');
+
+  function logTerminal(msg) {
+    const time = new Date().toLocaleTimeString();
+    liveTerminal.innerHTML += `<div>[${time}] ${msg}</div>`;
+    liveTerminal.scrollTop = liveTerminal.scrollHeight;
+  }
+
+  function truncate(addr) {
+    if (!addr) return '—';
+    return addr.slice(0, 6) + '…' + addr.slice(-4);
+  }
+
+  function formatRupiah(num) {
+    return 'Rp ' + Number(num).toLocaleString('id-ID');
+  }
+
+  // ========================================================
+  // WIZARD STEPPER NAVIGATION
+  // ========================================================
+  function switchStep(stepNumber) {
+    for (let i = 1; i <= 4; i++) {
+      const nav = document.getElementById(`nav-step-${i}`);
+      const panel = document.getElementById(`panel-step-${i}`);
+      if (nav) nav.classList.remove('active');
+      if (panel) panel.classList.remove('active');
+    }
+    const targetNav = document.getElementById(`nav-step-${stepNumber}`);
+    const targetPanel = document.getElementById(`panel-step-${stepNumber}`);
+    if (targetNav) targetNav.classList.add('active');
+    if (targetPanel) targetPanel.classList.add('active');
+  }
+
+  function proceedToStep(stepNumber) {
+    // Sinkronisasi data form
+    currentCarModel = document.getElementById('inputCarModel').value || 'Toyota Innova Zenix';
+    
+    // Perbarui preview tampilan di Step 3 & Sidebar
+    document.getElementById('previewCarModel').textContent = currentCarModel;
+    document.getElementById('summaryCarModel').textContent = currentCarModel;
+    document.getElementById('summaryPackageName').textContent = currentPackageName;
+    document.getElementById('summaryTotalAmount').textContent = formatRupiah(currentTotalAmount);
+
+    switchStep(stepNumber);
+  }
+
+  function selectPackage(el, name, price) {
+    document.querySelectorAll('.select-option').forEach(opt => opt.classList.remove('selected'));
+    el.classList.add('selected');
+    currentPackageName = name;
+    currentTotalAmount = price;
+
+    document.getElementById('previewPackageName').textContent = name;
+    document.getElementById('previewAmount').textContent = formatRupiah(price);
+    document.getElementById('summaryPackageName').textContent = name;
+    document.getElementById('summaryTotalAmount').textContent = formatRupiah(price);
+  }
+
+  // ========================================================
+  // WEB3 & WALLET CONNECTION
+  // ========================================================
+  async function connectWalletAction() {
+    if (typeof window.ethereum === 'undefined') {
+      alert("Ekstensi MetaMask tidak terdeteksi. Silakan pasang MetaMask di browser Anda!");
+      return;
+    }
+
+    try {
+      logTerminal("Meminta otorisasi koneksi ke MetaMask...");
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      userAccount = accounts[0];
+
+      web3Instance = new Web3(window.ethereum);
+      orderContract = new web3Instance.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS);
+
+      walletAddressText.textContent = truncate(userAccount);
+      walletAddressText.title = userAccount;
+
+      await checkNetworkStatus();
+      logTerminal(`✓ Dompet terhubung: ${truncate(userAccount)}`);
+
+      // Dengarkan perubahan akun atau jaringan
+      window.ethereum.on('accountsChanged', (accs) => {
+        if (!accs.length) location.reload();
+        userAccount = accs[0];
+        walletAddressText.textContent = truncate(userAccount);
+      });
+      window.ethereum.on('chainChanged', () => checkNetworkStatus());
+
+      // Sinkronkan status pesanan aktif saat ini
+      await fetchOrderStatusRealtime(currentOrderCode);
+      setupEventListener();
+
+    } catch (err) {
+      logTerminal(`❌ Gagal koneksi dompet: ${err.message}`);
+    }
+  }
+
+  async function checkNetworkStatus() {
+    if (!window.ethereum) return;
+    const chainIdHex = await window.ethereum.request({ method: 'eth_chainId' });
+    const decimal = parseInt(chainIdHex, 16);
+
+    if (GANACHE_CHAIN_IDS.includes(chainIdHex)) {
+      networkPill.textContent = '✓ Terhubung ke Ganache';
+      networkPill.className = 'pill online';
+      networkNameText.textContent = `Ganache Local (Chain ID: ${decimal})`;
+      switchChainBtn.style.display = 'none';
+      btnProceedToStep3.disabled = false;
+    } else {
+      networkPill.textContent = 'Bukan Jaringan Ganache';
+      networkPill.className = 'pill warn';
+      networkNameText.textContent = `Jaringan Lain (Chain ID: ${decimal})`;
+      switchChainBtn.style.display = 'block';
+      btnProceedToStep3.disabled = true;
+      logTerminal(`⚠️ Terdeteksi Chain ID ${decimal}. Silakan klik tombol 'Pindah ke Jaringan Ganache'.`);
+    }
+  }
+
+  async function switchOrAddGanache() {
+    if (!window.ethereum) return;
+    try {
+      logTerminal("Meminta MetaMask beralih ke jaringan Ganache GUI (5777)...");
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x1691' }], // 5777
+      });
+      logTerminal("✓ Berhasil beralih ke jaringan Ganache!");
+      await checkNetworkStatus();
+    } catch (switchError) {
+      if (switchError.code === 4902 || switchError.message?.includes('Unrecognized chain')) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x1691',
+              chainName: 'Ganache GUI (5777)',
+              rpcUrls: ['http://127.0.0.1:7545'],
+              nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+            }],
+          });
+          await checkNetworkStatus();
+        } catch (addErr) {
+          alert("Gagal menambahkan jaringan Ganache: " + addErr.message);
+        }
+      }
+    }
+  }
+
+  // ========================================================
+  // SMART CONTRACT CALLS & STATUS TRACKER
+  // ========================================================
+  function updateProgressUI(statusIndex) {
+    const statusName = STATUS_LABELS[statusIndex] || 'Created';
+    document.getElementById('summaryStatusBadge').textContent = statusName;
+
+    const nodes = [
+      document.getElementById('node-0'),
+      document.getElementById('node-1'),
+      document.getElementById('node-2'),
+      document.getElementById('node-3'),
+      document.getElementById('node-4')
+    ];
+
+    if (statusIndex === 4) { // Cancelled
+      nodes.forEach((el, idx) => {
+        el.className = (idx === 4) ? 'prog-node cancelled' : 'prog-node';
+      });
+      document.getElementById('summaryStatusBadge').style.color = 'var(--danger)';
+      return;
+    }
+
+    nodes.forEach((el, idx) => {
+      el.className = 'prog-node';
+      if (idx < statusIndex) {
+        el.classList.add('done');
+      } else if (idx === statusIndex) {
+        el.classList.add('current');
+      }
+    });
+
+    document.getElementById('summaryStatusBadge').style.color = (statusIndex === 3) ? 'var(--primary)' : 'var(--accent)';
+  }
+
+  async function fetchOrderStatusRealtime(orderCode) {
+    if (!orderContract) return;
+    try {
+      logTerminal(`Membaca data order "${orderCode}" dari blockchain...`);
+      const order = await orderContract.methods.getOrder(orderCode).call();
+      const statusIdx = parseInt(order.status, 10);
+      logTerminal(`Status aktif on-chain: ${STATUS_LABELS[statusIdx]}`);
+      updateProgressUI(statusIdx);
+    } catch (err) {
+      logTerminal(`Info: ${err.message}`);
+    }
+  }
+
+  function setupEventListener() {
+    if (!orderContract) return;
+    try {
+      orderContract.events.OrderStatusUpdated({
+        filter: { orderCode: currentOrderCode },
+        fromBlock: 'latest'
+      })
+      .on('data', (evt) => {
+        const newStatus = parseInt(evt.returnValues.status, 10);
+        logTerminal(`🔔 Event On-Chain terdeteksi! Status berubah ke: ${STATUS_LABELS[newStatus]}`);
+        updateProgressUI(newStatus);
+      })
+      .on('error', err => console.error(err));
+    } catch (e) {
+      console.warn("Polling fallback:", e);
+    }
+  }
+
+  // ========================================================
+  // TRANSAKSI WRITE ON-CHAIN (DENGAN GAS BUFFER LENGKAP)
+  // ========================================================
+  async function triggerStatusUpdate(newStatusIndex) {
+    if (!orderContract || !userAccount) {
+      alert("Hubungkan dompet MetaMask Anda terlebih dahulu di Langkah 2!");
+      switchStep(2);
+      return;
+    }
+
+    try {
+      logTerminal(`Mengirim transaksi updateStatus(${STATUS_LABELS[newStatusIndex]})...`);
+
+      // Estimasi gas dengan buffer 50%
+      let gasLimit = 200000;
+      try {
+        const est = await orderContract.methods.updateStatus(currentOrderCode, newStatusIndex).estimateGas({ from: userAccount });
+        gasLimit = Math.floor(Number(est) * 1.5);
+      } catch (e) {
+        gasLimit = 250000;
+      }
+
+      const tx = await orderContract.methods
+        .updateStatus(currentOrderCode, newStatusIndex)
+        .send({ from: userAccount, gas: gasLimit });
+
+      logTerminal(`✓ Transaksi Berhasil! TxHash: ${truncate(tx.transactionHash)} | Block #${tx.blockNumber}`);
+      updateProgressUI(newStatusIndex);
+
+      // Notifikasi ke backend Laravel
+      notifyLaravelBackend(tx.transactionHash, newStatusIndex);
+    } catch (error) {
+      logTerminal(`❌ Gagal update: ${error.message}`);
+    }
+  }
+
+  async function createOrderOnChainAction() {
+    if (!orderContract || !userAccount) {
+      alert("Hubungkan dompet MetaMask Anda terlebih dahulu di Langkah 2!");
+      switchStep(2);
+      return;
+    }
+
+    try {
+      // Generate ID Order Baru
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+      currentOrderCode = `CA-20261011-${randomSuffix}`;
+      document.getElementById('summaryOrderCode').textContent = currentOrderCode;
+      document.getElementById('previewOrderCode').textContent = currentOrderCode;
+
+      const dummyHash = web3Instance.utils.sha3(currentOrderCode + currentCarModel);
+
+      logTerminal(`Mencatat Order Baru "${currentOrderCode}" on-chain...`);
+
+      const tx = await orderContract.methods
+        .createOrder(currentOrderCode, currentTotalAmount, dummyHash)
+        .send({ from: userAccount, gas: 300000 });
+
+      logTerminal(`✓ Order Baru Terdaftar! Tx: ${truncate(tx.transactionHash)} | Block #${tx.blockNumber}`);
+      updateProgressUI(0); // Created
+
+      notifyLaravelBackend(tx.transactionHash, 0);
+      proceedToStep(4);
+    } catch (err) {
+      logTerminal(`❌ Gagal buat order on-chain: ${err.message}`);
+    }
+  }
+
+  async function notifyLaravelBackend(txHash, statusIndex) {
+    try {
+      logTerminal(`Menyimpan Tx Hash ke Laravel API audit trail...`);
+      await fetch('/api/blockchain/record-transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_code: currentOrderCode,
+          tx_hash: txHash,
+          customer_wallet: userAccount,
+          status: STATUS_LABELS[statusIndex]
+        })
+      });
+      logTerminal(`✓ Audit trail tersimpan di database toko.`);
+    } catch (e) {
+      logTerminal(`(Simulasi offline database Laravel)`);
+    }
+  }
+
+  // Inisialisasi awal saat halaman dibuka
+  window.addEventListener('DOMContentLoaded', () => {
+    // Jika MetaMask sudah terpasang, siapkan listener otomatis
+    if (window.ethereum && window.ethereum.selectedAddress) {
+      connectWalletAction();
+    } else {
+      updateProgressUI(3); // Tampilkan Completed untuk order contoh pertama
+    }
+  });
+</script>
+
+</body>
+</html>
