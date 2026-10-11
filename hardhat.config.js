@@ -5,12 +5,10 @@ require("dotenv").config();
 module.exports = {
   solidity: "0.8.24",
   networks: {
-    hardhat: {
-      chainId: 1337,
-    },
     ganache: {
       url: process.env.GANACHE_RPC_URL || "http://127.0.0.1:7545",
-      chainId: parseInt(process.env.GANACHE_CHAIN_ID || "5777"),
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: parseInt(process.env.GANACHE_CHAIN_ID) || 1337,
     },
   },
 };
