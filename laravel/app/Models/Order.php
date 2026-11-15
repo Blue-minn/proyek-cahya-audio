@@ -16,6 +16,7 @@ class Order extends Model
         'customer_name',
         'whatsapp_number',
         'car_model',
+        'package_name',
         'custom_notes',
         'total_amount',
         'customer_wallet_address',

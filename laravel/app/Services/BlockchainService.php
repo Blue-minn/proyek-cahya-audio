@@ -11,6 +11,15 @@ use Illuminate\Support\Facades\Log;
  */
 class BlockchainService
 {
+    /** keccak256("OrderCreated(string,address,uint256,bytes32,uint256)") */
+    public const TOPIC_ORDER_CREATED = '0x89830edecba49a0ec5da0a0597902fa129774e1b3813e96c16afca45c0c1e3c0';
+
+    /** keccak256("OrderStatusUpdated(string,uint8,uint256)") */
+    public const TOPIC_ORDER_STATUS_UPDATED = '0x2466ac315127033fff9683bd097545e563a8b71a413a530b78df237162cd4ad8';
+
+    /** Urutan enum OrderStatus di CahyaAudioOrder.sol */
+    public const STATUS_LABELS = ['Created', 'Paid', 'InProcess', 'Completed', 'Cancelled'];
+
     protected string $rpcUrl;
     protected string $contractAddress;
     protected int $chainId;
@@ -149,6 +158,40 @@ class BlockchainService
             'logs_count'   => count($receipt['logs'] ?? []),
             'raw'          => $receipt
         ];
+    }
+
+    /**
+     * Membaca event CahyaAudioOrder dari log receipt.
+     * Hanya log yang dipancarkan oleh alamat kontrak aktif yang dihitung.
+     *
+     * @return array{event_name: ?string, status: ?string}
+     */
+    public function decodeOrderEvent(array $receipt): array
+    {
+        $contract = strtolower($this->contractAddress);
+        $result = ['event_name' => null, 'status' => null];
+
+        foreach ($receipt['logs'] ?? [] as $log) {
+            if (strtolower($log['address'] ?? '') !== $contract) {
+                continue;
+            }
+            $topic0 = strtolower($log['topics'][0] ?? '');
+
+            if ($topic0 === self::TOPIC_ORDER_STATUS_UPDATED) {
+                // topics[2] = status (uint8, indexed)
+                $statusIndex = hexdec($log['topics'][2] ?? '0x0');
+                return [
+                    'event_name' => 'OrderStatusUpdated',
+                    'status'     => self::STATUS_LABELS[$statusIndex] ?? null,
+                ];
+            }
+
+            if ($topic0 === self::TOPIC_ORDER_CREATED) {
+                $result = ['event_name' => 'OrderCreated', 'status' => 'Created'];
+            }
+        }
+
+        return $result;
     }
 
     /**

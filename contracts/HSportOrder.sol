@@ -109,7 +109,7 @@ contract HSportOrder {
     }
 
 
-    /// @notice 
+    /// @notice Deployer menjadi owner sekaligus operator pertama.
     constructor() {
         owner = msg.sender;
         operators[msg.sender] = true;
@@ -150,7 +150,10 @@ contract HSportOrder {
         emit OrderCreated(orderId, externalOrderHash, msg.sender, totalAmount);
     }
 
-/// @notice @param  orderId @return Data @dev    
+    /// @notice Mengambil data order on-chain berdasarkan ID.
+    /// @param  orderId ID order on-chain (1..orderCount).
+    /// @return Data order lengkap (struct Order).
+    /// @dev    Revert OrderNotFound jika ID tidak valid.
     function getOrder(uint256 orderId)
         external
         view
@@ -160,7 +163,9 @@ contract HSportOrder {
         return orders[orderId];
     }
 
-    /// @notice  @param account @return true 
+    /// @notice Mengecek apakah sebuah akun terdaftar sebagai operator.
+    /// @param  account Alamat wallet yang dicek.
+    /// @return true jika akun adalah operator.
     function isOperator(address account) external view returns (bool) {
         return operators[account];
     }
