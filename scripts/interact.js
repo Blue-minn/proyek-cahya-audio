@@ -2,7 +2,11 @@ const { ethers } = require("hardhat");
 require("dotenv").config();
 
 async function main() {
-  const contractAddress = process.env.CONTRACT_ADDRESS;
+  // HSportOrder punya alamat sendiri; CONTRACT_ADDRESS dipakai CahyaAudioOrder (dApp & Laravel)
+  const contractAddress = process.env.HSPORT_ORDER_ADDRESS;
+  if (!contractAddress) {
+    throw new Error("HSPORT_ORDER_ADDRESS belum diisi di .env. Jalankan: npm run deploy:hsport");
+  }
   console.log("--------------------------------------------------");
   console.log("Menguji transaksi pembuatan order pada HSportOrder...");
   console.log("Alamat Kontrak:", contractAddress);

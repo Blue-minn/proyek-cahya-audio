@@ -20,11 +20,28 @@ async function main() {
   console.log("Contract Address:", contractAddress);
   console.log("--------------------------------------------------");
 
+  // Tambahkan operator bengkel tambahan (opsional) dari .env
+  const operatorAddress = process.env.OPERATOR_ADDRESS;
+  if (operatorAddress && hre.ethers.isAddress(operatorAddress)) {
+    try {
+      const opTx = await contract.addOperator(operatorAddress);
+      await opTx.wait();
+      console.log(`✓ Operator bengkel ditambahkan: ${operatorAddress}`);
+    } catch (err) {
+      console.log("Catatan: Penambahan operator dilewati:", err.message);
+    }
+  }
+
   // Buat contoh order awal untuk demo pengujian
   try {
     const sampleOrderCode = "CA-20261011-0001";
     const sampleAmount = 4500000; // Rp 4.500.000
-    const sampleHash = hre.ethers.keccak256(hre.ethers.toUtf8Bytes(sampleOrderCode + "-demo-order"));
+    // Hash mengikuti format dApp: kode|nama|WA|mobil|paket|catatan|total
+    const sampleHash = hre.ethers.solidityPackedKeccak256(
+      ["string", "string", "string", "string", "string", "string", "uint256"],
+      [sampleOrderCode, "Budi Santoso", "081717131489", "Toyota Innova Zenix",
+       "Subwoofer + Kustom Bagasi (Innova)", "Demo order", sampleAmount]
+    );
     
     console.log(`Mendaftarkan contoh order inisial: ${sampleOrderCode}...`);
     const tx = await contract.createOrder(sampleOrderCode, sampleAmount, sampleHash);
